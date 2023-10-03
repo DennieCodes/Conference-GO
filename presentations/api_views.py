@@ -12,22 +12,34 @@ class PresentationDetailEncoder(ModelEncoder):
         "title",
         "synopsis",
         "created",
-        # "status",
-        # "conference",
     ]
+
+    def get_extra_data(self, o):
+        return {
+            "status": o.status.name,
+            "conference": o.conference.name,
+        }
+
+
+class PresentationListEncoder(ModelEncoder):
+    model = Presentation
+    properties = ["title"]
+
+    def get_extra_data(self, o):
+        return {
+            "status": o.status.name,
+        }
 
 
 # API_LIST_PRESENTATION
 def api_list_presentations(request, conference_id):
-    presentations = [
-        {
-            "title": p.title,
-            "status": p.status.name,
-            "href": p.get_api_url(),
-        }
-        for p in Presentation.objects.filter(conference=conference_id)
-    ]
-    return JsonResponse({"presentations": presentations})
+    presentations = Presentation.objects.get(conference=conference_id)
+
+    return JsonResponse(
+        presentations,
+        encoder=PresentationListEncoder,
+        safe=False,
+    )
 
 
 # API_SHOW_PRESENTATION

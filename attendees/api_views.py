@@ -1,32 +1,44 @@
+from events.api_views import ConferenceListEncoder
+from common.json import ModelEncoder
 from django.http import JsonResponse
 from .models import Attendee
 
 
-# API_LIST_ATTENDEES
-def api_list_attendees(request, conference_id):
-    attendees = [
-        {
-            "name": p.name,
-            "href": p.get_api_url(),
-        }
-        for p in Attendee.objects.filter(conference=conference_id)
+class AttendeeDetailEncoder(ModelEncoder):
+    model = Attendee
+    properties = [
+        "name",
+        "email",
+        "company_name",
+        "created",
+        "conference",
     ]
 
-    return JsonResponse({"attendees": attendees})
+    encoders = {
+        "conference": ConferenceListEncoder(),
+    }
+
+
+class AttendeeListEncoder(ModelEncoder):
+    model = Attendee
+    properties = ["name"]
+
+
+# API_LIST_ATTENDEES
+def api_list_attendees(request, conference_id):
+    attendees = Attendee.objects.all()
+
+    return JsonResponse(
+        {"attendees": attendees},
+        encoder=AttendeeListEncoder,
+    )
 
 
 # API_SHOW_ATTENDEE
 def api_show_attendee(request, id):
     attendee = Attendee.objects.get(id=id)
     return JsonResponse(
-        {
-            "name": attendee.name,
-            "email": attendee.email,
-            "company_name": attendee.company_name,
-            "created": attendee.created,
-            "conference": {
-                "name": attendee.conference.name,
-                "href": attendee.conference.get_api_url(),
-            },
-        }
+        attendee,
+        encoder=AttendeeDetailEncoder,
+        safe=False,
     )

@@ -3,6 +3,25 @@ from django.http import JsonResponse
 from .models import Conference, Location
 
 
+class LocationDetailEncoder(ModelEncoder):
+    model = Location
+    properties = [
+        "name",
+        "city",
+        "room_count",
+        "created",
+        "updated",
+    ]
+
+    def get_extra_data(self, o):
+        return {"state": o.state.abbreviation}
+
+
+class LocationListEncoder(ModelEncoder):
+    model = Location
+    properties = ["name"]
+
+
 class ConferenceDetailEncoder(ModelEncoder):
     model = Conference
     properties = [
@@ -14,7 +33,11 @@ class ConferenceDetailEncoder(ModelEncoder):
         "ends",
         "created",
         "updated",
+        "location",
     ]
+    encoders = {
+        "location": LocationListEncoder(),
+    }
 
 
 class ConferenceListEncoder(ModelEncoder):
@@ -55,30 +78,20 @@ def api_show_conference(request, id):
 
 # API_LIST_LOCATIONS
 def api_list_locations(request):
-    response = []
+
     locations = Location.objects.all()
-    for location in locations:
-        response.append(
-            {
-                "name": location.name,
-                "href": location.get_api_url(),
-            }
-        )
-    return JsonResponse({"locations": response})
+
+    return JsonResponse(
+        {"locations": locations},
+        encoder=LocationListEncoder,
+    )
 
 
 # API SHOW LOCATION
 def api_show_location(request, id):
     location = Location.objects.get(id=id)
     return JsonResponse(
-        {
-            "name": location.name,
-            "city": location.city,
-            "room_count": location.room_count,
-            "created": location.created,
-            "updated": location.updated,
-            "state": {
-                "name": location.state.name,
-            },
-        }
+        location,
+        encoder=LocationDetailEncoder,
+        safe=False,
     )
