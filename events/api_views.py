@@ -1,4 +1,5 @@
 import json
+from .acls import get_picture, get_weather
 from common.json import ModelEncoder
 from django.http import JsonResponse
 from .models import Conference, Location, State
@@ -13,6 +14,7 @@ class LocationDetailEncoder(ModelEncoder):
         "room_count",
         "created",
         "updated",
+        "picture_url",
     ]
 
     def get_extra_data(self, o):
@@ -36,6 +38,7 @@ class ConferenceDetailEncoder(ModelEncoder):
         "created",
         "updated",
         "location",
+        "weather",
     ]
     encoders = {
         "location": LocationListEncoder(),
@@ -83,6 +86,11 @@ def api_list_conferences(request):
 def api_show_conference(request, id):
     if request.method == "GET":
         conference = Conference.objects.get(id=id)
+        location = Location.objects.get(name=conference.location)
+        state = State.objects.get(abbreviation=location.state)
+        weather = get_weather(conference.location.city, state.name)
+
+        conference.weather = weather
         return JsonResponse(
             conference,
             encoder=ConferenceDetailEncoder,
@@ -134,7 +142,8 @@ def api_list_locations(request):
                 {"message": "Invalid state abbreviation"},
                 status=400,
             )
-
+        picture_url = get_picture(content["city"], state.name)
+        content.update(picture_url)
         location = Location.objects.create(**content)
 
         return JsonResponse(
