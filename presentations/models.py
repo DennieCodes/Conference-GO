@@ -41,6 +41,22 @@ class Presentation(models.Model):
         on_delete=models.PROTECT,
     )
 
+    def approve(self):
+        try:
+            approved = Status.objects.get(name="APPROVED")
+            self.status = approved
+        except Status.DoesNotExist:
+            self.status = Status.objects.create(name="APPROVED")
+        self.save()
+
+    def reject(self):
+        try:
+            rejected = Status.objects.get(name="REJECTED")
+            self.status = rejected
+        except Status.DoesNotExist:
+            self.status = Status.objects.create(name="REJECTED")
+        self.save()
+
     conference = models.ForeignKey(
         "events.Conference",
         related_name="presentations",

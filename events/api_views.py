@@ -1,5 +1,20 @@
+from common.json import ModelEncoder
 from django.http import JsonResponse
 from .models import Conference, Location
+
+
+class ConferenceDetailEncoder(ModelEncoder):
+    model = Conference
+    properties = [
+        "name",
+        "description",
+        "max_presentations",
+        "max_attendees",
+        "starts",
+        "ends",
+        "created",
+        "updated",
+    ]
 
 
 # API_LIST_CONFERENCES
@@ -21,20 +36,9 @@ def api_show_conference(request, id):
     conference = Conference.objects.get(id=id)
 
     return JsonResponse(
-        {
-            "name": conference.name,
-            "starts": conference.starts,
-            "ends": conference.ends,
-            "description": conference.description,
-            "created": conference.created,
-            "updated": conference.updated,
-            "max_presentations": conference.max_presentations,
-            "max_attendees": conference.max_attendees,
-            "location": {
-                "name": conference.location.name,
-                "href": conference.location.get_api_url(),
-            },
-        }
+        conference,
+        encoder=ConferenceDetailEncoder,
+        safe=False,
     )
 
 
